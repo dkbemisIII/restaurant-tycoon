@@ -17,9 +17,26 @@ local function getPlayerData(userId: number)
     return dataStoreAPI.GetPlayerData:Invoke(userId)
 end
 
--- OrderedDataStores for each leaderboard
-local moneyLeaderboard = DataStoreService:GetOrderedDataStore("Leaderboard_Money_v1")
-local levelLeaderboard = DataStoreService:GetOrderedDataStore("Leaderboard_Level_v1")
+-- OrderedDataStores for each leaderboard (nil if place not published)
+local moneyLeaderboard = nil
+local levelLeaderboard = nil
+local leaderboardAvailable = false
+
+do
+    local ok1, store1 = pcall(function()
+        return DataStoreService:GetOrderedDataStore("Leaderboard_Money_v1")
+    end)
+    local ok2, store2 = pcall(function()
+        return DataStoreService:GetOrderedDataStore("Leaderboard_Level_v1")
+    end)
+    if ok1 and ok2 then
+        moneyLeaderboard = store1
+        levelLeaderboard = store2
+        leaderboardAvailable = true
+    else
+        warn("[Leaderboard] OrderedDataStore not available (place not published?) - leaderboard disabled")
+    end
+end
 
 -- RemoteEvent to send leaderboard data to clients
 local leaderboardData = Instance.new("RemoteEvent")
@@ -37,7 +54,7 @@ local function createLeaderboardDisplay()
     local board = Instance.new("Part")
     board.Name = "LeaderboardDisplay"
     board.Size = Vector3.new(20, 15, 1)
-    board.Position = Vector3.new(-30, 8, -30) -- Placed near spawn area
+    board.Position = Vector3.new(-40, 8, -40) -- Placed in the mall hallway area
     board.Anchored = true
     board.Material = Enum.Material.SmoothPlastic
     board.Color = Color3.fromRGB(30, 30, 40)
@@ -144,6 +161,8 @@ end
 
 -- Submit current player stats to the leaderboard DataStores
 local function submitPlayerStats(player: Player)
+    if not leaderboardAvailable then return end
+
     local data = getPlayerData(player.UserId)
     if not data then return end
 
@@ -160,6 +179,8 @@ end
 
 -- Fetch leaderboard data from OrderedDataStore
 local function fetchLeaderboard(store, category: string)
+    if not leaderboardAvailable or not store then return end
+
     local success, pages = pcall(function()
         return store:GetSortedAsync(false, 10) -- Top 10, descending
     end)

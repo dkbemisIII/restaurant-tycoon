@@ -253,7 +253,12 @@ local function spawnCustomer(plotModel: Model)
     end
 
     local payment = Utils.CalculatePayment(ownedMenuItems, starRating, data.rebirths or 0)
-    addMoney(player, payment)
+
+    -- Add payment to the plot's pending money (player collects at the $ sign)
+    local currentPending = plotModel:GetAttribute("PendingMoney") or 0
+    plotModel:SetAttribute("PendingMoney", currentPending + payment)
+
+    -- XP is still awarded immediately
     addXP(player, Config.XPPerCustomerServed)
 
     statusLabel.Text = "💰 " .. Utils.FormatMoney(payment)

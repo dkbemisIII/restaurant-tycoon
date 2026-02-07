@@ -8,8 +8,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 
--- The DataStore where all player data lives
-local playerDataStore = DataStoreService:GetDataStore(Config.DataStoreKey)
+-- The DataStore where all player data lives (nil if not published yet)
+local playerDataStore = nil
+local dataStoreAvailable = false
+
+local ok, store = pcall(function()
+    return DataStoreService:GetDataStore(Config.DataStoreKey)
+end)
+if ok and store then
+    playerDataStore = store
+    dataStoreAvailable = true
+else
+    warn("[DataStore] DataStore not available (place not published?) - using in-memory only")
+end
 
 -- In-memory cache of loaded player data (indexed by UserId)
 local playerDataCache: {[number]: any} = {}
@@ -60,24 +71,29 @@ local DataLoadedEvent, DataUpdateEvent, StatsChangedEvent = createRemotes()
 -- Load player data from DataStore (called when player joins)
 local function loadPlayerData(player: Player)
     local userId = player.UserId
-    local success, data = pcall(function()
-        return playerDataStore:GetAsync(tostring(userId))
-    end)
 
-    if success and data then
-        -- Merge with defaults to handle schema migrations (new fields added later)
-        local defaults = getDefaultData()
-        for key, defaultValue in defaults do
-            if data[key] == nil then
-                data[key] = defaultValue
+    if dataStoreAvailable then
+        local success, data = pcall(function()
+            return playerDataStore:GetAsync(tostring(userId))
+        end)
+
+        if success and data then
+            -- Merge with defaults to handle schema migrations (new fields added later)
+            local defaults = getDefaultData()
+            for key, defaultValue in defaults do
+                if data[key] == nil then
+                    data[key] = defaultValue
+                end
             end
+            playerDataCache[userId] = data
+        else
+            if not success then
+                warn("[DataStore] Failed to load data for", player.Name, "- using defaults")
+            end
+            playerDataCache[userId] = getDefaultData()
         end
-        playerDataCache[userId] = data
     else
-        -- New player or DataStore error: use defaults
-        if not success then
-            warn("[DataStore] Failed to load data for", player.Name, "- using defaults")
-        end
+        -- No DataStore available, use defaults (Studio testing)
         playerDataCache[userId] = getDefaultData()
     end
 
@@ -93,6 +109,8 @@ end
 
 -- Save player data to DataStore
 local function savePlayerData(player: Player)
+    if not dataStoreAvailable then return end
+
     local userId = player.UserId
     local data = playerDataCache[userId]
     if not data then return end

@@ -17,8 +17,11 @@ Config.MaxLevel = 100
 
 -- === RESTAURANT ===
 Config.MaxPlots = 8                -- Max simultaneous players with plots
-Config.PlotSize = 60               -- Studs; square plot side length
-Config.PlotSpacing = 10            -- Gap between plots
+Config.PlotSize = 100              -- Studs; square plot side length (big enough for a fancy build-out)
+Config.PlotSpacing = 16            -- Gap between plots (mall hallway width)
+Config.WallHeight = 18             -- Restaurant room wall height
+Config.WallThickness = 2           -- Wall part thickness
+Config.DoorWidth = 10              -- Entrance doorway width
 
 -- === CUSTOMERS ===
 Config.BaseSpawnInterval = 8       -- Seconds between customer spawns (star-1 restaurant)
