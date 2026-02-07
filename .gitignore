@@ -1,0 +1,17 @@
+# Roblox build files
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+
+# Rojo lock
+rojo.lock
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+*.swo
